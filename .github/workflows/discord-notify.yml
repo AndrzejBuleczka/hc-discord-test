@@ -1,0 +1,32 @@
+name: Notify Discord on PR Close
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  discord:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send notification to Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_USER: ${{ github.event.pull_request.user.login }}
+          ACTION: ${{ github.event.action }}
+          MERGED: ${{ github.event.pull_request.merged }}
+        run: |
+          STATUS=""
+          if [ "$MERGED" = "true" ]; then
+            STATUS="✅ został zmergowany"
+          else
+            STATUS="❌ został zamknięty bez mergowania"
+          fi
+
+          curl -X POST -H "Content-Type: application/json" \
+          -d "{
+            \"content\": \"🔔 Pull Request **${PR_TITLE}** autorstwa @${PR_USER} ${STATUS}.\n🔗 ${PR_URL}\"
+          }" \
+          "$DISCORD_WEBHOOK"
